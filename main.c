@@ -18,8 +18,8 @@ void display(){
   printf("----TO_DO----\n");
   printf("1.Check TODO\n");
   printf("2.ADD task\n");
- // printf("3.Delete task\n");
-  printf("CHOSE AN OPTION(1-2):");
+  printf("3.Delete task\n");
+  printf("CHOSE AN OPTION(1-3):");
 }
 
  void Check()
@@ -62,6 +62,68 @@ void add_task() {
 }
 void delete()
 {
+ FILE *fl = fopen("todo.csv", "r");
+ char str[1024];
+ int task_count = 0;
+
+ if (fl == NULL) {
+   printf("Error: Could not open todo.csv\n");
+   return;
+ }
+
+ // Display tasks with numbers. The header is read but not numbered.
+ if (fgets(str, sizeof(str), fl) == NULL) {
+   fclose(fl);
+   printf("There are no tasks to delete.\n");
+   return;
+ }
+
+ printf("Tasks:\n");
+ while (fgets(str, sizeof(str), fl) != NULL) {
+   task_count++;
+   printf("%d. %s", task_count, str);
+ }
+ fclose(fl);
+
+ if (task_count == 0) {
+   printf("There are no tasks to delete.\n");
+   return;
+ }
+
+ int choice;
+ printf("Enter the task number to delete: ");
+ if (scanf("%d", &choice) != 1 || choice < 1 || choice > task_count) {
+   printf("Invalid task number.\n");
+   return;
+ }
+
+ fl = fopen("todo.csv", "r");
+ FILE *temp = fopen("temp.csv", "w");
+ if (fl == NULL || temp == NULL) {
+   printf("Error: Could not open the task files.\n");
+   if (fl != NULL) fclose(fl);
+   if (temp != NULL) fclose(temp);
+   return;
+ }
+
+ // Copy the header, then copy every task except the selected one.
+ fgets(str, sizeof(str), fl);
+ fputs(str, temp);
+ int current_task = 0;
+ while (fgets(str, sizeof(str), fl) != NULL) {
+   current_task++;
+   if (current_task != choice) {
+     fputs(str, temp);
+   }
+ }
+ fclose(fl);
+ fclose(temp);
+
+ if (remove("todo.csv") != 0 || rename("temp.csv", "todo.csv") != 0) {
+   printf("Error: Could not update todo.csv\n");
+   return;
+ }
+ printf("Task deleted successfully.\n");
 }
 
 int main()
@@ -87,6 +149,10 @@ int main()
      case 2:
         add_task();
         break;
+      case 3:
+        delete();
+        break;
+
      default:
        printf("Out of Range!\n");
        break;
